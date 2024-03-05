@@ -4,12 +4,19 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
+        - //svo/points1
         - //svo/points1/Namespaces1
+        - //svo/backend_pose_imu_viz1
+        - //svo/image/01
         - //svo/loop_closures1/Namespaces1
+        - //svo/pose_imu1
+        - /svo_kfs1
         - /svo_kfs1/Namespaces1
-        - /backend_points1
+        - /Path1
+        - /Axes1
       Splitter Ratio: 0.49593496322631836
-    Tree Height: 317
+    Tree Height: 1151
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -56,6 +63,8 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: false
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: true
@@ -110,6 +119,7 @@ Visualization Manager:
       Marker Topic: /svo/loop_closures
       Name: /svo/loop_closures
       Namespaces:
+        loop_detection: true
         loop_query: true
       Queue Size: 100
       Value: true
@@ -144,15 +154,13 @@ Visualization Manager:
       Unreliable: false
       Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /svo/keyframes
       Name: svo_kfs
       Namespaces:
-        active_kfs: true
-        cams: false
-        kfs: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -168,9 +176,7 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 60
       Min Color: 0; 0; 0
-      Min Intensity: 0
       Name: frontend_map
       Position Transformer: XYZ
       Queue Size: 10
@@ -198,9 +204,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 60
       Min Color: 0; 0; 0
-      Min Intensity: 60
       Name: svo_pose_graph
       Position Transformer: XYZ
       Queue Size: 10
@@ -228,9 +232,7 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 60
       Min Color: 0; 0; 0
-      Min Intensity: 60
       Name: svo_lc_database_map
       Position Transformer: XYZ
       Queue Size: 10
@@ -258,9 +260,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 0; 255; 0
-      Max Intensity: 1
       Min Color: 9; 9; 8
-      Min Intensity: 0
       Name: backend_points
       Position Transformer: XYZ
       Queue Size: 10
@@ -273,9 +273,63 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: false
       Value: true
+    - Class: rviz/Image
+      Enabled: false
+      Image Topic: /cam0/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Image
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: false
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /svo/path_imu
+      Unreliable: false
+      Value: true
+    - Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Axes
+      Radius: 0.10000000149011612
+      Reference Frame: world
+      Value: true
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /svo/image/1
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Image
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
-    Background Color: 179; 179; 179
+    Background Color: 25; 25; 25
     Default Light: true
     Fixed Frame: world
     Frame Rate: 30
@@ -301,35 +355,37 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 20.810766220092773
+      Distance: 15.951717376708984
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.6986348628997803
-        Y: -0.19477568566799164
-        Z: -3.2361745834350586
+        X: 0.597601056098938
+        Y: -1.165246844291687
+        Z: 1.9056330919265747
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2247958183288574
+      Pitch: 0.4697962999343872
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.9636194705963135
+      Yaw: 4.9818525314331055
     Saved: ~
 Window Geometry:
   /svo/image/0:
     collapsed: false
   Displays:
     collapsed: false
-  Height: 1121
+  Height: 1865
   Hide Left Dock: false
-  Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000020b00000428fc020000000efb0000001200530065006c0065006300740069006f006e00000000280000009b0000005e00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c00610079007301000000190000017f000000ce00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb00000018002f00730076006f002f0069006d006100670065002f0030010000019e000002a30000001800fffffffb0000001a002f00720065006d006f00640065002f0064006500700074006800000002f1000001110000000000000000fb0000000a0049006d006100670065010000044a000001020000000000000000fb0000000a0049006d0061006700650100000433000001e70000000000000000fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb00000018002f00730076006f002f0069006d006100670065002f003001000001e2000002070000000000000000000000010000010000000428fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000001900000428000000ac00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003ce0000003efc0100000002fb0000000800540069006d00650000000000000003ce0000044b00fffffffb0000000800540069006d00650100000000000004500000000000000000000004cb0000042800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730000000000ffffffff0000000000000000
+  Hide Right Dock: true
+  Image:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000001ba000004bdfc020000000cfb0000001200530065006c0065006300740069006f006e00000000280000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000026e000004bd000000ca00fffffffa000000010100000002fb0000000a0049006d0061006700650000000000ffffffff0000005700fffffffb000000100044006900730070006c0061007900730100000000000001560000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000001a002f00720065006d006f00640065002f0064006500700074006800000002f1000001110000000000000000fb0000000a0049006d006100670065010000044a000001020000000000000000fb0000000a0049006d0061006700650100000433000001e70000000000000000fb0000000c00430061006d0065007200610000000000ffffffff00000000000000000000000100000100000004bdfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000026e000004bd000000a600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b2000000000000000000000002000003f500000251fc0100000004fb00000018002f00730076006f002f0069006d006100670065002f00300100000000000001f40000007f00fffffffb0000000a0049006d00610067006501000001fa000001fb0000005700fffffffb00000018002f00730076006f002f0069006d006100670065002f00300100000000000003f50000000000000000fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003ce0000003efc0100000002fb0000000800540069006d00650000000000000003ce0000043000fffffffb0000000800540069006d0065010000000000000450000000000000000000000235000004bd00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730000000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -337,7 +393,7 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Views:
-    collapsed: false
-  Width: 2018
-  X: 274
-  Y: 31
+    collapsed: true
+  Width: 1013
+  X: 67
+  Y: 27

@@ -121,7 +121,7 @@ mean_depth_inv: 0.3
 ##############################
 ##### Backend parameters #####
 ##############################
-use_ceres_backend: true
+use_ceres_backend: false
 ceres_verbose: false
 ceres_marginalize: true
 ceres_num_iterations: 3

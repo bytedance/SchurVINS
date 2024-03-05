@@ -1,3 +1,6 @@
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #include "svo_ros/svo_node_base.h"
 
 #include <gflags/gflags.h>
@@ -13,6 +16,8 @@ void SvoNodeBase::initThirdParty(int argc, char **argv)
   google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, true);
   google::InstallFailureSignalHandler();
+  google::SetStderrLogging(google::GLOG_ERROR);
+  // google::SetLogDestination(google::GLOG_INFO, "logs/");
 
   ros::init(argc, argv, "svo");
 }

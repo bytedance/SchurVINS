@@ -6,6 +6,10 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #include <stdexcept>
 #include <vikit/math_utils.h>
 #include <svo/common/frame.h>
@@ -59,6 +63,12 @@ size_t PoseOptimizer::run(const FrameBundle::Ptr& frame_bundle, double reproj_th
   {
     frame->T_f_w_ = frame->T_cam_imu()*T_imu_world;
   }
+
+  LOG(INFO) << std::fixed << "optimizePose: " << frame_bundle->getMinTimestampSeconds()
+            << ", quat: " << T_imu_world.getEigenQuaternion().w() << ", " << T_imu_world.getEigenQuaternion().x()
+            << ", " << T_imu_world.getEigenQuaternion().y() << ", " << T_imu_world.getEigenQuaternion().z() << ", "
+            << "pos: " << T_imu_world.getPosition()[0] << ", " << T_imu_world.getPosition()[1] << ", "
+            << T_imu_world.getPosition()[2];
 
   // Remove Measurements with too large reprojection error
   size_t n_deleted_edges = 0, n_deleted_corners = 0;

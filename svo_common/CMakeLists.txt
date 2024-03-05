@@ -17,12 +17,14 @@ set(HEADERS
   include/svo/common/point.h
   include/svo/common/seed.h
   include/svo/common/transformation.h
+  include/svo/common/local_feature.h
   include/svo/common/types.h
   )
 
 set(SOURCES
   src/frame.cpp
   src/point.cpp
+  src/local_feature.cpp
   )
 
 cs_add_library(${PROJECT_NAME} ${SOURCES} ${HEADERS})

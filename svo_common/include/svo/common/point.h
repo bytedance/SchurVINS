@@ -6,6 +6,10 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #pragma once
 
 #include <array>
@@ -81,6 +85,19 @@ public:
   int           id_;                       //!< Unique ID of the point.
   Position      pos_;                      //!< 3d pos of the point in the world coordinate frame.
   KeypointIdentifierList  obs_;                      //!< References to keyframes which observe the point
+
+  bool local_status_ = true;
+  LocalFeatureMap local_obs_;  // state id, feature
+  StateFactorMap state_factors;
+
+  int64_t register_id_ = -1;
+  Eigen::Matrix3d V;
+  Eigen::Matrix3d Vinv;
+  Eigen::Vector3d gv;
+  Matrix6o3d W;
+  bool ekf_init = false;
+  Eigen::Matrix3d cov;
+
   Eigen::Vector3d      normal_;                   //!< Surface normal at point.
   Eigen::Matrix2d      normal_information_;       //!< Inverse covariance matrix of normal estimation.
   bool          normal_set_ = false;       //!< Flag whether the surface normal was estimated or not.
@@ -109,6 +126,16 @@ public:
   Point(const Point&) = delete;
   Point& operator=(const Point&) = delete;
 
+  /// check
+  bool CheckStatus();
+
+  /// check
+  bool CheckLocalStatus();
+  bool CheckLocalStatus(const int prev_frame_id0, const int prev_frame_id1, const int curr_framebundle_id);
+
+  /// Remove observation via frame-ID and camera-ID.
+  void RemoveLocalObs(const int state_id, const int camera_id);
+  
   /// Add a reference to a frame.
   void addObservation(const FramePtr& frame, const size_t feature_index);
 
@@ -151,6 +178,13 @@ public:
       Eigen::Vector3d& b,
       double& new_chi2);
 
+  void EkfInit();
+
+  void EkfUpdate(const Eigen::VectorXd& dx, double obs_std);
+
+  void EkfUpdate(const Eigen::VectorXd& dx, const double obs_std, const double focal_length, const int min_idx,
+                  const int max_idx, const double huberA, const double huberB);
+                  
   /// Optimize point position through minimizing the reprojection error.
   void optimize(const size_t n_iter, bool using_bearing_vector=false);
 

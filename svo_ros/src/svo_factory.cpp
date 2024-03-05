@@ -1,3 +1,6 @@
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #include <ros/package.h>
 
 #include <svo/svo.h>
@@ -77,6 +80,8 @@ BaseOptions loadBaseOptions(const ros::NodeHandle& pnh, bool forward_default)
       vk::param<double>(pnh, "backend_scale_stable_thresh", 0.02);
   o.global_map_lc_timeout_sec_ =
       vk::param<double>(pnh, "global_map_timeout_sec", 2.0);
+  o.window_size_ = vk::param<int>(pnh, "window_size", 5);
+  o.obs_dev_ = vk::param<double>(pnh, "obs_dev", 2.0);
   return o;
 }
 

@@ -6,6 +6,10 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #include <svo/frame_handler_stereo.h>
 #include <svo/map.h>
 #include <svo/common/frame.h>
@@ -64,6 +68,7 @@ void FrameHandlerStereo::addImages(
 
 UpdateResult FrameHandlerStereo::processFirstFrame()
 {
+  schurvinsForward();
   if(initializer_->addFrameBundle(new_frames_) == InitResult::kFailure)
   {
     SVO_ERROR_STREAM("Initialization failed. Not enough triangulated points.");
@@ -79,6 +84,15 @@ UpdateResult FrameHandlerStereo::processFirstFrame()
 
   frame_utils::getSceneDepth(new_frames_->at(0), depth_median_, depth_min_, depth_max_);
   depth_filter_->addKeyframe(new_frames_->at(0), depth_median_, 0.5*depth_min_, depth_median_*1.5);
+  schurvinsBackward();
+
+  LOG(INFO) << std::fixed << "InitState: " << new_frames_->getMinTimestampSeconds()
+            << ", quat: " << new_frames_->get_T_W_B().getEigenQuaternion().w() << ", "
+            << new_frames_->get_T_W_B().getEigenQuaternion().x() << ", "
+            << new_frames_->get_T_W_B().getEigenQuaternion().y() << ", "
+            << new_frames_->get_T_W_B().getEigenQuaternion().z() << ", "
+            << "pos: " << new_frames_->get_T_W_B().getPosition()[0] << ", "
+            << new_frames_->get_T_W_B().getPosition()[1] << ", " << new_frames_->get_T_W_B().getPosition()[2];  
 
   SVO_INFO_STREAM("Init: Selected first frame.");
   stage_ = Stage::kTracking;

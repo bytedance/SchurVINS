@@ -6,6 +6,10 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #pragma once
 
 #include <list>
@@ -24,6 +28,26 @@
 #include <svo/common/types.h>
 #include <svo/common/camera.h>
 #include <svo/common/transformation.h>
+
+#define USE_SCHUR_VINS
+
+namespace schur_vins {
+using Matrix15d = Eigen::Matrix<double, 15, 15>;
+using Matrix12d = Eigen::Matrix<double, 12, 12>;
+using Matrix2o3d = Eigen::Matrix<double, 2, 3>;
+using Matrix3o6d = Eigen::Matrix<double, 3, 6>;
+using Matrix7d = Eigen::Matrix<double, 7, 7>;
+using Matrix6d = Eigen::Matrix<double, 6, 6>;
+using Matrix2o6d = Eigen::Matrix<double, 2, 6>;
+using Matrix6o3d = Eigen::Matrix<double, 6, 3>;
+
+using Vector15d = Eigen::Matrix<double, 15, 1>;
+using Vector6d = Eigen::Matrix<double, 6, 1>;
+
+#define Deg2Rad(x) (x * M_PI / 180)
+#define Rad2Deg(x) (x * 180 / M_PI)
+class SchurVINS;
+}  // namespace schur_vins
 
 
 namespace svo
@@ -92,6 +116,7 @@ namespace svo
   typedef std::unique_ptr<AbstractInitialization> InitializerPtr;
   class PoseOptimizer;
   typedef std::unique_ptr<PoseOptimizer> PoseOptimizerPtr;
+  typedef std::unique_ptr<schur_vins::SchurVINS> SchurVINSPtr;
   class SparseImgAlign;
   typedef std::unique_ptr<SparseImgAlign> SparseImgAlignPtr;
   class DepthFilter;

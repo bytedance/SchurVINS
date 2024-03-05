@@ -6,11 +6,16 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #include <svo/common/point.h>
 
 #include <vikit/math_utils.h>
 #include <svo/common/logging.h>
 #include <svo/common/frame.h>
+#include <svo/common/local_feature.h>
 
 namespace svo {
 
@@ -37,6 +42,48 @@ Point::~Point()
 {}
 
 std::atomic_uint64_t Point::global_map_value_version_ {0u};
+
+bool Point::CheckStatus() {
+    constexpr double MAX_DIST = 1e3;
+    constexpr int MIN_OBS = 3;
+    if (pos().norm() > MAX_DIST || local_obs_.size() < MIN_OBS)
+        return false;
+
+    return true;
+}
+
+bool Point::CheckLocalStatus() {
+    if (local_status_ == false)
+        return false;
+
+    return true;
+}
+
+bool Point::CheckLocalStatus(const int prev_frame_id0, const int prev_frame_id1, const int curr_framebundle_id) {
+    auto iter = local_obs_.find(curr_framebundle_id);
+    bool has_opt_prev = ((last_structure_optim_ == prev_frame_id0) || (last_structure_optim_ == prev_frame_id1));
+    bool has_obs_curr = (iter != local_obs_.end());
+
+    if (has_opt_prev || has_obs_curr)
+        return true;
+
+    return false;
+}
+
+void Point::RemoveLocalObs(const int state_id, const int camera_id) {
+    svo::LocalFeatureMap::iterator iter = local_obs_.find(state_id);
+    if (iter == local_obs_.end())
+        return;
+    for (; iter != local_obs_.end(); ++iter) {
+        if (iter->first != state_id)
+            break;
+        if (iter->first == state_id && iter->second->camera_id == camera_id) {
+            // LOG(ERROR) << "find local obs erase it";
+            local_obs_.erase(iter);
+            break;
+        }
+    }
+}
 
 void Point::addObservation(const FramePtr& frame, const size_t feature_index)
 {
@@ -243,6 +290,129 @@ void Point::updateHessianGradientUnitSphere(
   A.noalias() += J.transpose() * J;
   b.noalias() -= J.transpose() * e;
   new_chi2 += e.squaredNorm();
+}
+
+void Point::EkfInit() {
+    ekf_init = true;
+    cov = Eigen::Matrix3d::Identity() * 0.1 * 0.1;
+}
+
+void Point::EkfUpdate(const Eigen::VectorXd& dx, double obs_std) {
+    if (!ekf_init) {
+        EkfInit();
+    }
+
+    CHECK(!state_factors.empty());
+
+    CHECK(state_factors.rbegin()->first <= (int)dx.rows());
+
+    Eigen::Vector3d tmp_res = gv;  // calced residual.
+    for (svo::StateFactorMap::iterator it = state_factors.begin(); it != state_factors.end(); it++) {
+        CHECK(!it->second.state.expired());
+        int bias = (*it).first * 6;
+        tmp_res -= (*it).second.W.transpose() * dx.segment(bias, 6);
+    }
+
+    Eigen::Matrix3d Rcov = V * obs_std * obs_std;
+    Eigen::Matrix3d S = V * cov * V.transpose() + Rcov;
+
+    // Eigen::Matrix3d K_T = S.ldlt().solve(V * cov);
+    Eigen::MatrixXd K_T = S.inverse() * V * cov;
+
+    Eigen::Matrix3d K = K_T.transpose();
+
+    Eigen::Vector3d delta_x = K * tmp_res;
+
+    pos_ += delta_x;
+    CHECK_LT(pos_.norm(), 1e4);
+
+    Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * V;
+    cov = I_KH * cov;
+    Eigen::Matrix3d stable_cov = (cov + cov.transpose()) / 2.0;
+    cov = stable_cov;
+}
+
+void Point::EkfUpdate(const Eigen::VectorXd& dx, const double obs_std, const double focal_length, const int min_idx,
+                      const int max_idx, const double huberA, const double huberB) {
+    if (!ekf_init) {
+        EkfInit();
+    }
+
+    CHECK(!state_factors.empty());
+    CHECK(state_factors.rbegin()->first <= (int)dx.rows());
+
+    const double obs_invdev = 1.0 / obs_std;
+
+    // TODO: compute keyframe observation
+    for (svo::Point::KeypointIdentifierList::iterator fit = obs_.begin(); fit != obs_.end(); ++fit) {
+        if (fit->frame.expired())
+            continue;
+
+        const svo::FramePtr& frame = fit->frame.lock();
+        const int& curr_frame_idx = frame->bundleId();
+        if (curr_frame_idx >= min_idx && curr_frame_idx <= max_idx)  // pass observations on schurvins local sliding window
+            continue;
+
+        const Eigen::Vector3d& obs = frame->f_vec_.col(fit->keypoint_index_);
+        const Eigen::Matrix3d R_c_w = frame->T_f_w_.getRotationMatrix();
+        const Eigen::Vector3d t_c_w = frame->T_f_w_.getPosition();
+        const Eigen::Vector3d Pc = R_c_w * pos() + t_c_w;
+
+        // calc residual
+        Eigen::Vector2d r
+            = (obs.head<2>() / obs.z() - Pc.head<2>() / Pc.z()) * (focal_length);  // unsupport unit sphere
+        // LOG(ERROR) << "residual: " << r.transpose();
+
+        // huber
+        const double r_l2 = r.squaredNorm();
+        double huber_scale = 1.0;
+        if (r_l2 > huberB) {
+            const double radius = sqrt(r_l2);
+            double rho1 = std::max(std::numeric_limits<double>::min(), huberA / radius);
+            huber_scale = sqrt(rho1);
+            r *= huber_scale;
+        }
+        r *= obs_invdev;
+
+        // calc jacobian
+        Matrix2o3d dr_dpc = Matrix2o3d::Zero();
+        const double pc22 = Pc[2] * Pc[2];
+        dr_dpc(0, 0) = 1 / Pc[2];
+        dr_dpc(1, 1) = 1 / Pc[2];
+        dr_dpc(0, 2) = -Pc[0] / pc22;
+        dr_dpc(1, 2) = -Pc[1] / pc22;
+        dr_dpc *= (focal_length * obs_invdev * huber_scale);
+
+        Matrix2o3d jf = Matrix2o3d::Zero();
+        jf.noalias() = dr_dpc * R_c_w;
+        V.noalias() += jf.transpose() * jf;  // pt 2 pt
+        gv.noalias() += jf.transpose() * r;  // pt grad
+    }
+
+    Eigen::Vector3d tmp_res = gv;  // calced residual.
+    for (svo::StateFactorMap::iterator it = state_factors.begin(); it != state_factors.end(); it++) {
+        CHECK(!it->second.state.expired());
+        int bias = (*it).first * 6;
+        tmp_res -= (*it).second.W.transpose() * dx.segment(bias, 6);
+    }
+
+    Eigen::Matrix3d Rcov = V;
+    Eigen::Matrix3d S = V * cov * V.transpose() + Rcov;
+
+    // Eigen::Matrix3d K_T = S.ldlt().solve(V * cov);
+    Eigen::MatrixXd K_T = S.inverse() * V * cov;
+
+    Eigen::Matrix3d K = K_T.transpose();
+
+    Eigen::Vector3d delta_x = K * tmp_res;
+
+    pos_ += delta_x;
+    CHECK_LT(pos_.norm(), 1e4);
+
+    Eigen::Matrix3d I_KH = Eigen::Matrix3d::Identity() - K * V;
+    cov = I_KH * cov;
+    Eigen::Matrix3d stable_cov = (cov + cov.transpose()) / 2.0;
+    cov = stable_cov;
 }
 
 void Point::optimize(const size_t n_iter, bool using_bearing_vector)

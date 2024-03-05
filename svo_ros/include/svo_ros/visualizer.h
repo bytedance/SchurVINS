@@ -3,6 +3,11 @@
 // Copyright (C) 2014 Christian Forster <forster at ifi dot uzh dot ch>
 // (Robotics and Perception Group, University of Zurich, Switzerland).
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
+
 #pragma once
 
 #include <utility>  // std::pair
@@ -24,6 +29,7 @@
 #include <pcl/point_types.h>
 #include <svo/global.h>
 #include <svo/common/types.h>
+#include <nav_msgs/Path.h>
 
 #ifdef SVO_LOOP_CLOSING
 #include <svo/online_loopclosing/keyframe.h>
@@ -62,9 +68,14 @@ public:
   size_t dense_pub_nth_;
   bool viz_caption_str_;
 
+  std::string traj_path_;
+  std::ofstream save_traj_;
+
   ros::Publisher pub_frames_;
   ros::Publisher pub_points_;
   ros::Publisher pub_imu_pose_;
+  ros::Publisher pub_imu_path_;
+  nav_msgs::Path imu_path_;
   ros::Publisher pub_info_;
   ros::Publisher pub_markers_;
   ros::Publisher pub_pc_;

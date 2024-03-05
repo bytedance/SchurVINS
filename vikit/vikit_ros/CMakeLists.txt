@@ -1,6 +1,6 @@
 project(vikit_ros)
 cmake_minimum_required(VERSION 2.8.3)
-
+find_package(yaml-cpp)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 

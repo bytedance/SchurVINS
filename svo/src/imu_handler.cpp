@@ -5,6 +5,10 @@
 //
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
+
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #include "svo/imu_handler.h"
 
 #include <numeric>
@@ -214,8 +218,8 @@ bool ImuHandler::getMeasurements(
 
   if(t2-it2->timestamp_ > imu_calib_.max_imu_delta_t)
   {
-    LOG(WARNING) << "newest imu measurement is too old for the image "
-                    << t2-it2->timestamp_;
+    // LOG(WARNING) << "newest imu measurement is too old for the image "
+    //                 << t2-it2->timestamp_;
     return false;
   }
 

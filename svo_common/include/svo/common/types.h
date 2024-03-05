@@ -1,3 +1,6 @@
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #pragma once
 
 #include <memory>
@@ -34,8 +37,39 @@ using InlierMask = Eigen::Matrix<bool, Eigen::Dynamic, 1, Eigen::ColMajor>;
 using SeedStates = Eigen::Matrix<FloatType, 4, Eigen::Dynamic, Eigen::ColMajor>;
 using TrackIds = Eigen::VectorXi;
 
+using Matrix15d = Eigen::Matrix<double, 15, 15>;
+using Matrix12d = Eigen::Matrix<double, 12, 12>;
+using Matrix2o3d = Eigen::Matrix<double, 2, 3>;
+using Matrix3o6d = Eigen::Matrix<double, 3, 6>;
+using Matrix7d = Eigen::Matrix<double, 7, 7>;
+using Matrix6d = Eigen::Matrix<double, 6, 6>;
+using Matrix2o6d = Eigen::Matrix<double, 2, 6>;
+using Matrix6o3d = Eigen::Matrix<double, 6, 3>;
+
+using Vector15d = Eigen::Matrix<double, 15, 1>;
+using Vector3d = Eigen::Matrix<double, 3, 1>;
+using Vector6d = Eigen::Matrix<double, 6, 1>;
+
 //------------------------------------------------------------------------------
 // Forward declarations and common types for simplicity.
+class LocalFeature;
+using LocalFeaturePtr = std::shared_ptr<LocalFeature>;
+using LocalFeatureWeakPtr = std::weak_ptr<LocalFeature>;
+using LocalFeatureMap = std::multimap<int, LocalFeaturePtr>;
+
+class StateFactor;
+using StateFactorMap = std::map<int64_t, StateFactor>;
+
+class Point;
+using PointPtr = std::shared_ptr<Point>;
+using PointWeakPtr = std::weak_ptr<Point>;
+using LocalPointMap = std::map<int, svo::PointPtr>;
+
+class AugState;
+using AugStatePtr = std::shared_ptr<AugState>;
+using AugStateWeakPtr = std::weak_ptr<AugState>;
+using StateMap = std::map<int64_t, svo::AugStatePtr>;
+
 struct Feature;
 using FeaturePtr = std::shared_ptr<Feature>;
 class Frame;

@@ -57,13 +57,21 @@ imu_params:
   max_imu_delta_t: 0.01
   acc_max: 176.0
   omega_max: 17
-  sigma_omega_c: 12.0e-4
-  sigma_acc_c: 8.0e-3
-  sigma_omega_bias_c: 0.03
-  sigma_acc_bias_c: 0.1
+  # sigma_omega_c: 12.0e-4
+  # sigma_acc_c: 8.0e-3
+  # sigma_omega_bias_c: 0.03
+  # sigma_acc_bias_c: 0.1
+  # sigma_integration: 0.0
+  # g: 9.8082
+  # imu_rate: 800
+
+  sigma_omega_c: 0.004
+  sigma_acc_c: 0.08
+  sigma_omega_bias_c: 2.0e-6
+  sigma_acc_bias_c: 0.00004
   sigma_integration: 0.0
-  g: 9.8082
-  imu_rate: 800
+  g: 9.81007
+  imu_rate: 200
 
 imu_initialization:
   velocity: [0.0, 0, 0.0]

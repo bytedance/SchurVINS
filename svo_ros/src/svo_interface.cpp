@@ -1,3 +1,6 @@
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #include <svo_ros/svo_interface.h>
 
 #include <ros/callback_queue.h>
@@ -79,7 +82,8 @@ SvoInterface::SvoInterface(
   if(vk::param<bool>(pnh_, "use_imu", false))
   {
     imu_handler_ = factory::getImuHandler(pnh_);
-    svo_->imu_handler_ = imu_handler_;
+    svo_->setImuHandler(imu_handler_);
+    // svo_->imu_handler_ = imu_handler_;
   }
 
   if(vk::param<bool>(pnh_, "use_ceres_backend", false))
@@ -416,6 +420,7 @@ void SvoInterface::inputKeyCallback(const std_msgs::StringConstPtr& key_input)
     case 'q':
       quit_ = true;
       SVO_INFO_STREAM("SVO user input: QUIT");
+      ros::shutdown();
       break;
     case 'r':
       svo_->reset();
@@ -472,7 +477,7 @@ void SvoInterface::imuLoop()
   nh.setCallbackQueue(&queue);
   std::string imu_topic = vk::param<std::string>(pnh_, "imu_topic", "imu");
   ros::Subscriber sub_imu =
-      nh.subscribe(imu_topic, 10, &svo::SvoInterface::imuCallback, this);
+      nh.subscribe(imu_topic, 10000, &svo::SvoInterface::imuCallback, this);
   while(ros::ok() && !quit_)
   {
     queue.callAvailable(ros::WallDuration(0.1));
@@ -512,9 +517,9 @@ void SvoInterface::stereoLoop()
   std::string cam0_topic(vk::param<std::string>(pnh_, "cam0_topic", "/cam0/image_raw"));
   std::string cam1_topic(vk::param<std::string>(pnh_, "cam1_topic", "/cam1/image_raw"));
   image_transport::ImageTransport it(nh);
-  image_transport::SubscriberFilter sub0(it, cam0_topic, 1, std::string("raw"));
-  image_transport::SubscriberFilter sub1(it, cam1_topic, 1, std::string("raw"));
-  ExactSync sync_sub(ExactPolicy(5), sub0, sub1);
+  image_transport::SubscriberFilter sub0(it, cam0_topic, 1000, std::string("raw"));
+  image_transport::SubscriberFilter sub1(it, cam1_topic, 1000, std::string("raw"));
+  ExactSync sync_sub(ExactPolicy(1000), sub0, sub1);
   sync_sub.registerCallback(boost::bind(&svo::SvoInterface::stereoCallback, this, _1, _2));
 
   while(ros::ok() && !quit_)

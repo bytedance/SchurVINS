@@ -6,6 +6,11 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
+
 #include "svo/frame_handler_base.h"
 
 #include <functional>
@@ -15,6 +20,7 @@
 
 #include <svo/common/conversions.h>
 #include <svo/common/point.h>
+#include <svo/common/local_feature.h>
 #include <svo/common/imu_calibration.h>
 #include <svo/direct/depth_filter.h>
 #include <svo/direct/feature_detection.h>
@@ -38,6 +44,7 @@
 #include "svo/reprojector.h"
 #include "svo/imu_handler.h"
 #include "svo/pose_optimizer.h"
+#include "svo/schur_vins.h"
 
 namespace
 {
@@ -116,6 +123,7 @@ FrameHandlerBase::FrameHandlerBase(const BaseOptions& base_options, const Reproj
     g_permon->addLog("loba_err_fin");
     g_permon->addLog("n_candidates");
     g_permon->addLog("dropout");
+    g_permon->addLog("point_optimizer_num");
     g_permon->init("trace_frontend", options_.trace_dir);
   }
   // init modules
@@ -136,6 +144,29 @@ FrameHandlerBase::FrameHandlerBase(const BaseOptions& base_options, const Reproj
   pose_optimizer_.reset(new PoseOptimizer(PoseOptimizer::getDefaultSolverOptions()));
   if (options_.poseoptim_using_unit_sphere)
     pose_optimizer_->setErrorType(PoseOptimizer::ErrorType::kBearingVectorDiff);
+
+  bool user_schur_vins = true;
+  if (user_schur_vins) {
+    const int WINDOW_SIZE = options_.window_size_;
+    double OBS_DEV = options_.obs_dev_;
+
+    schur_vins_.reset(new schur_vins::SchurVINS());                                          // init Schur VINS
+    schur_vins_->InitMaxState(WINDOW_SIZE);                                                  // init window size
+    if (cams_->getCamera(0).getType() == vk::cameras::CameraGeometryBase::Type::kPinhole) {  // init focal length
+      auto instrisics = cams_->getCameraShared(0)->getIntrinsicParameters();
+      double f = instrisics(0);
+      schur_vins_->InitFocalLength(f);
+    } else if (cams_->getCamera(0).getType() == vk::cameras::CameraGeometryBase::Type::kOmni) {
+      auto instrisics = cams_->getCameraShared(0)->getIntrinsicParameters();
+      double f = instrisics(0);
+      schur_vins_->InitFocalLength(f);
+    }
+    schur_vins_->InitObsStddev(OBS_DEV);      // init observation error for feature
+    schur_vins_->InitExtrinsic(this->cams_);  // init extrinscs
+    schur_vins_->InitCov();                   // init coverance
+    schur_vins_->InitChi2(0.95);              // init chi test ratio
+    svo::LocalFeature::unit_sphere = false;   // set feature unit sphere
+  }
 
   // DEBUG ***
   //pose_optimizer_->initTracing(options_.trace_dir);
@@ -170,8 +201,8 @@ bool FrameHandlerBase::addImageBundle(const std::vector<cv::Mat>& imgs, const ui
   else
   {
     // at first iteration initialize tracing if enabled
-    if (options_.trace_statistics)
-      bundle_adjustment_->setPerformanceMonitor(options_.trace_dir);
+    // if (options_.trace_statistics)
+    //   bundle_adjustment_->setPerformanceMonitor(options_.trace_dir);
   }
   if (options_.trace_statistics)
   {
@@ -310,6 +341,27 @@ bool FrameHandlerBase::addFrameBundle(const FrameBundlePtr& frame_bundle)
     }
   }
 
+    // fill in frame bundle imu measurements
+#ifdef USE_SCHUR_VINS
+  if (schur_vins_ && imu_handler_) {
+    ImuMeasurements imu_measurements;
+    const double curr_frame_bundle_stamp = frame_bundle->getMinTimestampSeconds();
+    bool imu_ready = imu_handler_->waitTill(curr_frame_bundle_stamp);  // wait for img and imu sync only 5ms
+    if (imu_ready
+      && imu_handler_->getMeasurementsContainingEdges(curr_frame_bundle_stamp, imu_measurements, true)) {
+      const int num_imu = imu_measurements.size();
+      frame_bundle->imu_datas_ = imu_measurements;
+      std::reverse(frame_bundle->imu_datas_.begin(), frame_bundle->imu_datas_.end());
+      frame_bundle->imu_ready_ = true;
+
+      // for (const auto& imu_data : frame_bundle->imu_datas_)
+      //     LOG(INFO) << std::fixed << imu_data.timestamp_;
+      // LOG(INFO) << std::fixed << "frame bundle timestamp: " << curr_frame_bundle_stamp << " "
+      //           << " collect imu data: " << imu_measurements.size();
+    }
+  }
+#endif
+
   // handle motion prior
   if (have_motion_prior_)
   {
@@ -440,6 +492,11 @@ bool FrameHandlerBase::addFrameBundle(const FrameBundlePtr& frame_bundle)
     }
 #endif
   }
+
+#ifdef USE_SCHUR_VINS
+  // schur vins keyframe slidewindow
+  schur_vins_->SetKeyframe(new_frames_->isKeyframe());
+#endif
 
 #ifdef SVO_LOOP_CLOSING
   // we add the previous frame if it is a keyframe
@@ -607,6 +664,13 @@ void FrameHandlerBase::setInitialPose(const FrameBundlePtr& frame_bundle) const
       frame_bundle->at(i)->T_f_w_ = cams_->get_T_C_B(i) * T_world_imuinit.inverse();
     }
   }
+  LOG(INFO) << std::fixed << "setInitialPose: " << frame_bundle->getMinTimestampSeconds()
+            << ", quat: " << frame_bundle->get_T_W_B().getEigenQuaternion().w() << ", "
+            << frame_bundle->get_T_W_B().getEigenQuaternion().x() << ", "
+            << frame_bundle->get_T_W_B().getEigenQuaternion().y() << ", "
+            << frame_bundle->get_T_W_B().getEigenQuaternion().z() << ", "
+            << "pos: " << frame_bundle->get_T_W_B().getPosition()[0] << ", "
+            << frame_bundle->get_T_W_B().getPosition()[1] << ", " << frame_bundle->get_T_W_B().getPosition()[2];
 }
 
 //------------------------------------------------------------------------------
@@ -621,6 +685,17 @@ size_t FrameHandlerBase::sparseImageAlignment()
   {
     SVO_START_TIMER("sparse_img_align");
   }
+
+#ifdef USE_SCHUR_VINS
+
+  schurvinsForward();
+  if (options_.trace_statistics) {
+    SVO_STOP_TIMER("sparse_img_align");
+  }
+  return new_frames_->numFeatures();
+
+#else
+
   sparse_img_align_->reset();
   if (have_motion_prior_)
   {
@@ -643,6 +718,8 @@ size_t FrameHandlerBase::sparseImageAlignment()
   }
   VLOG(40) << "Sparse image alignment tracked " << img_align_n_tracked << " features.";
   return img_align_n_tracked;
+
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -740,9 +817,31 @@ size_t FrameHandlerBase::projectMapInFrame()
   {
     SVO_WARN_STREAM_THROTTLE(1.0, "Not enough matched features: " +
                              std::to_string(n_total_ftrs));
+    LOG(INFO) << "Not enough matched features: " << n_total_ftrs;
   }
 
   return n_total_ftrs;
+}
+
+void FrameHandlerBase::schurvinsForward() {
+#ifdef USE_SCHUR_VINS
+    if (schur_vins_ && imu_handler_ && new_frames_->imu_ready_) {
+        schur_vins_->Forward(new_frames_);
+    } else {
+        LOG(WARNING) << "schurvinsForward miss imu";
+    }
+#endif
+}
+
+int FrameHandlerBase::schurvinsBackward() {
+#ifdef USE_SCHUR_VINS
+    if (schur_vins_ && imu_handler_ && new_frames_->imu_ready_) {
+        return schur_vins_->Backward(new_frames_);
+    } else {
+        CHECK(0);
+    }
+#endif
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -756,7 +855,7 @@ size_t FrameHandlerBase::optimizePose()
   {
     SVO_START_TIMER("pose_optimizer");
   }
-
+#ifndef USE_SCHUR_VINS
   pose_optimizer_->reset();
   if (have_motion_prior_)
   {
@@ -765,6 +864,9 @@ size_t FrameHandlerBase::optimizePose()
                                       options_.poseoptim_prior_lambda);
   }
   size_t sfba_n_edges_final = pose_optimizer_->run(new_frames_, options_.poseoptim_thresh);
+#else
+  size_t sfba_n_edges_final = schurvinsBackward();
+#endif
 
   if (options_.trace_statistics)
   {
@@ -787,7 +889,7 @@ void FrameHandlerBase::optimizeStructure(const FrameBundle::Ptr& frames, int max
 
   if (max_n_pts == 0)
     return; // don't return if max_n_pts == -1, this means we optimize ALL points
-
+  int num_pts_opt = 0;
   if (options_.trace_statistics)
   {
     SVO_START_TIMER("point_optimizer");
@@ -817,13 +919,21 @@ void FrameHandlerBase::optimizeStructure(const FrameBundle::Ptr& frames, int max
     }
     for (const PointPtr& point : pts)
     {
+    #ifndef USE_SCHUR_VINS
       point->optimize(max_iter, optimize_on_sphere);
       point->last_structure_optim_ = frame->id_;
+    #else
+      schur_vins_->StructureOptimize(point);
+      // point->optimize(max_iter, optimize_on_sphere);
+      point->last_structure_optim_ = frame->id_;
+    #endif
     }
+    num_pts_opt += pts.size();
   }
   if (options_.trace_statistics)
   {
     SVO_STOP_TIMER("point_optimizer");
+    SVO_LOG("point_optimizer_num", static_cast<int>(num_pts_opt));
   }
 }
 
@@ -1006,7 +1116,7 @@ void FrameHandlerBase::setTrackingQuality(const size_t num_observations)
   if (!last_frames_->isKeyframe() &&
       feature_drop > options_.quality_max_fts_drop)
   {
-    SVO_WARN_STREAM("Lost "<< feature_drop <<" features!");
+    // SVO_WARN_STREAM("Lost "<< feature_drop <<" features!");
     tracking_quality_ = TrackingQuality::kInsufficient;
   }
 }
@@ -1233,6 +1343,15 @@ void FrameHandlerBase::setBundleAdjuster(const AbstractBundleAdjustmentPtr& ba)
 {
   bundle_adjustment_ = ba;
   bundle_adjustment_type_ = bundle_adjustment_->getType();
+}
+
+void FrameHandlerBase::setImuHandler(const ImuHandlerPtr& imu_handler) {
+    imu_handler_ = imu_handler;
+    if (schur_vins_ && imu_handler)
+        schur_vins_->InitImuModel(imu_handler_->imu_calib_.acc_noise_density,
+                                  imu_handler_->imu_calib_.acc_bias_random_walk_sigma,
+                                  imu_handler_->imu_calib_.gyro_noise_density,
+                                  imu_handler_->imu_calib_.gyro_bias_random_walk_sigma);  // init imu instriscs
 }
 
 std::vector<FramePtr> FrameHandlerBase::closeKeyframes() const

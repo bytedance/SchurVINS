@@ -2,7 +2,9 @@
 //
 // Copyright (C) 2014 Christian Forster <forster at ifi dot uzh dot ch>
 // (Robotics and Perception Group, University of Zurich, Switzerland).
-
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #include <svo_ros/visualizer.h>
 
 #include <deque>
@@ -168,11 +170,20 @@ Visualizer::Visualizer(const std::string& trace_dir,
   , trace_pointcloud_(vk::param<bool>(pnh_, "trace_pointcloud", false))
   , vis_scale_(vk::param<double>(pnh_, "publish_marker_scale", 1.2))
 {
+  // Init traj saver
+  const auto logs_dir = boost::filesystem::path(trace_dir).parent_path().parent_path() / "logs";
+  CHECK(boost::filesystem::exists(logs_dir));
+  traj_path_ = (logs_dir / ("imu_traj.txt")).string();
+  std::cout << "traj_path: " << traj_path_;
+  save_traj_.open(traj_path_);
+  
   // Init ROS Marker Publishers
   pub_frames_ = pnh_.advertise<visualization_msgs::Marker>("keyframes", 10);
   pub_points_ = pnh_.advertise<visualization_msgs::Marker>("points", 10000);
   pub_imu_pose_ =
       pnh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_imu", 10);
+  pub_imu_path_ = 
+      pnh_.advertise<nav_msgs::Path>("path_imu", 10);
   pub_info_ = pnh_.advertise<svo_msgs::Info>("info", 10);
   pub_markers_ = pnh_.advertise<visualization_msgs::Marker>("markers", 100);
   pub_pc_ = pnh_.advertise<PointCloud>("pointcloud", 1);
@@ -248,8 +259,8 @@ void Visualizer::publishImuPose(const Transformation& T_world_imu,
                                 const Eigen::Matrix<double, 6, 6> Covariance,
                                 const int64_t timestamp_nanoseconds)
 {
-  if (pub_imu_pose_.getNumSubscribers() == 0)
-    return;
+  // if (pub_imu_pose_.getNumSubscribers() == 0)
+  //   return;
   VLOG(100) << "Publish IMU Pose";
 
   Eigen::Quaterniond q = T_world_imu.getRotation().toImplementation();
@@ -269,6 +280,17 @@ void Visualizer::publishImuPose(const Transformation& T_world_imu,
   for (size_t i = 0; i < 36; ++i)
     msg_pose->pose.covariance[i] = Covariance(i % 6, i / 6);
   pub_imu_pose_.publish(msg_pose);
+
+
+  imu_path_.header = msg_pose->header;
+  geometry_msgs::PoseStamped pose;
+  pose.header = imu_path_.header;
+  pose.pose = msg_pose->pose.pose;
+  imu_path_.poses.push_back(pose);
+  pub_imu_path_.publish(imu_path_);
+
+  save_traj_ << std::fixed << std::setprecision(10) << 1e-9 * timestamp_nanoseconds << " " << p[0] << " " << p[1]
+              << " " << p[2] << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
 }
 
 void Visualizer::publishCameraPoses(const FrameBundlePtr& frame_bundle,

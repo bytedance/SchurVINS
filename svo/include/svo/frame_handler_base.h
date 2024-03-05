@@ -6,6 +6,9 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
 #pragma once
 
 #include <mutex>
@@ -210,6 +213,9 @@ struct BaseOptions
   /// the system is initialized, we still think the relative pose with respect
   /// to the global map / loop closure database is still good.
   double global_map_lc_timeout_sec_ = 3.0;
+  /// schur vins
+  int window_size_ = 3;
+  double obs_dev_ = 2.0;
 };
 
 enum class Stage {
@@ -348,6 +354,9 @@ public:
   /// EXPERIMENTAL Set Bundle-Adjuster handler
   void setBundleAdjuster(const AbstractBundleAdjustmentPtr& ba);
 
+  // set Imu handler
+  void setImuHandler(const ImuHandlerPtr& imu_handler);
+
   inline const AbstractBundleAdjustmentPtr& getBundleAdjuster() const
   {
     return bundle_adjustment_;
@@ -408,6 +417,7 @@ public:
   SparseImgAlignBasePtr sparse_img_align_;
   std::vector<ReprojectorPtr> reprojectors_;
   PoseOptimizerPtr pose_optimizer_;
+  SchurVINSPtr schur_vins_;
   DepthFilterPtr depth_filter_;
   InitializerPtr initializer_;
   ImuHandlerPtr imu_handler_;
@@ -464,6 +474,10 @@ protected:
   size_t sparseImageAlignment();
 
   size_t projectMapInFrame();
+
+  void schurvinsForward();
+
+  int schurvinsBackward();
 
   size_t optimizePose();
 

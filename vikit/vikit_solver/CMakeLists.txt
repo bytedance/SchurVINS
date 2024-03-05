@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(vikit_solver)
 find_package(catkin_simple REQUIRED)
+find_package(yaml-cpp)
 catkin_simple(ALL_DEPS_REQUIRED)
 
 SET(CMAKE_BUILD_TYPE Release) # Release, RelWithDebInfo

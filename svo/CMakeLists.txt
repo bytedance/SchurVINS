@@ -1,6 +1,7 @@
 project(svo)
 cmake_minimum_required(VERSION 2.8.3)
 
+find_package(yaml-cpp)
 find_package(catkin_simple)
 catkin_simple()
 
@@ -13,6 +14,7 @@ list(APPEND SVO_SOURCEFILES
   src/frame_handler_base.cpp
   src/map.cpp
   src/pose_optimizer.cpp
+  src/schur_vins.cpp
   src/initialization.cpp
   src/reprojector.cpp
   src/imu_handler.cpp
@@ -31,6 +33,7 @@ list(APPEND SVO_HEADERFILES
   include/svo/initialization.h
   include/svo/map.h
   include/svo/pose_optimizer.h
+  include/svo/schur_vins.h
   include/svo/reprojector.h
   include/svo/stereo_triangulation.h
   include/svo/io.h
@@ -41,7 +44,7 @@ list(APPEND SVO_HEADERFILES
 # Create svo library
 include_directories(include ${INCLUDE_DIRS})
 cs_add_library(svo SHARED ${SVO_SOURCEFILES} ${SVO_HEADERFILES})
-target_link_libraries(svo ${LINK_LIBS})
+target_link_libraries(svo ${LINK_LIBS} yaml-cpp)
 
 ################################################################################
 ###

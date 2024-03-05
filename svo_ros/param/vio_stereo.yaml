@@ -4,6 +4,7 @@
 
 # Automatic initialisation
 automatic_reinitialization: True
+trace_statistics: true
 
 # Pipeline type
 pipeline_is_stereo: True
@@ -19,6 +20,7 @@ max_map_fts: 300
 # max_fts: 220
 max_n_kfs: 10
 quality_min_fts: 40
+# quality_max_drop_fts: 60
 
 # Map scale when initialized (not used for stereo)
 # Increase if the initial scene depth is larger
@@ -70,6 +72,8 @@ init_min_features: 60
 init_min_disparity: 30
 
 # Feature Detection
+use_edgelets: false
+# structure_optimization_max_pts: -1
 grid_size: 25 # Larger for larger images, for every cell you have max one feature.
 n_pyr_levels: 3 # Increase for larger images (image align max minus one)
 detector_threshold_primary: 10 # Fast detector threshold
@@ -96,6 +100,7 @@ poseoptim_using_unit_sphere: False # For wide angle lens, set it to True
 # Increase to get more accurate points
 seed_convergence_sigma2_thresh: 200
 mappoint_convergence_sigma2_thresh: 500
+# use_threaded_depthfilter: False
 
 relocalization_max_trials: 5
 
@@ -121,7 +126,7 @@ mean_depth_inv: 0.3
 ##############################
 ##### Backend parameters #####
 ##############################
-use_ceres_backend: true
+use_ceres_backend: false
 ceres_verbose: false
 ceres_marginalize: true
 ceres_num_iterations: 3
@@ -157,7 +162,7 @@ ceres_recalculate_imu_terms_after_loop: true
 ##### Loop Closing parameters #####
 ##############################
 # Flag to enable/disable loop closing
-runlc: True
+runlc: false
 # Name of the file which stores the BOW vocabulary #
 voc_name: voc_GEN_8X4.yml.gz
 # Data Extraction Threshold #
@@ -188,3 +193,6 @@ enable_image_logging: false
 # Path to the folder where images will be locked. Make sure folder is already created */
 image_log_base_path: /tmp/loopclosure_log/
 
+# schurvins
+obs_dev: 2.0
+window_size: 4

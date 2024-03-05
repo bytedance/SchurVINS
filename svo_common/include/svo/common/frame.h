@@ -6,6 +6,10 @@
 // This file is subject to the terms and conditions defined in the file
 // 'LICENSE', which is part of this source code package.
 
+// Modification Note: 
+// This file may have been modified by the authors of SchurVINS.
+// (All authors of SchurVINS are with PICO department of ByteDance Corporation)
+
 #pragma once
 
 #include <mutex>
@@ -19,6 +23,7 @@
 #include <svo/common/point.h>
 #include <svo/common/seed.h>
 #include <svo/common/conversions.h>
+#include "svo/common/imu_calibration.h"
 
 namespace svo {
 
@@ -523,6 +528,8 @@ public:
   /// of the previous edge for integration).
   Eigen::Matrix<int64_t, 1, Eigen::Dynamic> imu_timestamps_ns_;
   Eigen::Matrix<double, 6, Eigen::Dynamic> imu_measurements_; // Order: [acc, gyro]
+  bool imu_ready_ = false;
+  ImuMeasurements imu_datas_;  // for schurvins
 
   // Make class iterable:
   typedef FrameList::value_type value_type;
