@@ -82,11 +82,13 @@ This work incorporates the well-known SVO2.0 open-source code. We extend our gra
 # 8. Citation
 If you found this code/work to be useful in your own research, please considering citing the following information. Additionally, please considering citing SVO2.0([rpg_svo_pro_open](https://github.com/uzh-rpg/rpg_svo_pro_open)) since SchurVINS is developed on it.
 ```bibtex
-@inproceedings{fan2023schurvins,
+@inproceedings{fan2024schurvins,
   title={SchurVINS: Schur Complement-Based Lightweight Visual Inertial Navigation System},
-  author={Yunfei Fan, Tianyu Zhao, Guidong Wang},
+  author={Fan, Yunfei and Zhao, Tianyu and Wang, Guidong},
   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={17964--17973},
   year={2024}
+}
 }
 ```
 
