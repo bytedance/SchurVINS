@@ -89,7 +89,6 @@ If you found this code/work to be useful in your own research, please considerin
   pages={17964--17973},
   year={2024}
 }
-}
 ```
 
 # 9. We are Hiring!
