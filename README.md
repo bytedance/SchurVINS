@@ -34,6 +34,54 @@ sudo apt-get install libglew-dev libopencv-dev libyaml-cpp-dev
 sudo apt-get install libblas-dev liblapack-dev libsuitesparse-dev
 ```
 
+## 2.1 Docker (Alternative)
+
+We provide pre-built Docker images with all dependencies installed for both **x86_64** and **ARM64** platforms. The images are automatically built and published to GitHub Container Registry.
+
+### Pull the Docker Image
+
+Pull the latest image:
+```bash
+docker pull ghcr.io/byheng/schurvins:latest
+```
+
+Or pull a specific tag:
+```bash
+# Pull from a specific branch
+docker pull ghcr.io/byheng/schurvins:aarch64
+
+# Pull a specific version (if tagged)
+docker pull ghcr.io/byheng/schurvins:v1.0.0
+```
+
+### Run the Docker Container
+
+```bash
+# Run with X11 forwarding for visualization
+# Note: xhost allows Docker to access your X server. Reset with 'xhost -local:docker' after use
+xhost +local:docker
+docker run -it --rm \
+  --name schurvins \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v $HOME/datasets:/datasets \
+  ghcr.io/byheng/schurvins:latest
+# Optionally, revoke access after use:
+# xhost -local:docker
+```
+
+Inside the container, the workspace is already built at `/catkin_ws`. You can directly run:
+```bash
+source /catkin_ws/devel/setup.bash
+roslaunch svo_ros euroc_vio_stereo.launch
+```
+
+### Available Tags
+- `latest`: Latest build from the default branch (determined by repository settings)
+- `aarch64`: Latest build from the aarch64 branch
+- `main`, `master`: Builds from respective branches
+- Version tags (e.g., `v1.0.0`, `v1.0`, `v1`): Specific releases when tagged
+
 ## 3. Build
 
 Clone and build the repository:
